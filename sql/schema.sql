@@ -1,0 +1,78 @@
+CREATE TABLE users (
+ id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+ name VARCHAR(120) NOT NULL,
+ email VARCHAR(190) NOT NULL UNIQUE,
+ password_hash VARCHAR(255) NOT NULL,
+ role ENUM('admin','sales') NOT NULL DEFAULT 'sales',
+ is_active TINYINT(1) NOT NULL DEFAULT 1,
+ must_change_password TINYINT(1) NOT NULL DEFAULT 1,
+ created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE projects (
+ id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+ name VARCHAR(180) NOT NULL,
+ location VARCHAR(180) DEFAULT NULL,
+ property_type VARCHAR(80) DEFAULT NULL,
+ owner_user_id INT UNSIGNED DEFAULT NULL,
+ is_active TINYINT(1) NOT NULL DEFAULT 1,
+ created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+ CONSTRAINT fk_project_owner FOREIGN KEY(owner_user_id) REFERENCES users(id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE leads (
+ id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+ lead_code VARCHAR(30) NOT NULL UNIQUE,
+ full_name VARCHAR(150) NOT NULL,
+ phone VARCHAR(30) NOT NULL,
+ email VARCHAR(190) DEFAULT NULL,
+ project_id INT UNSIGNED DEFAULT NULL,
+ assigned_to INT UNSIGNED DEFAULT NULL,
+ source ENUM('Meta Ads','Website','Manual','API') NOT NULL DEFAULT 'Manual',
+ campaign_name VARCHAR(190) DEFAULT NULL,
+ adset_name VARCHAR(190) DEFAULT NULL,
+ ad_name VARCHAR(190) DEFAULT NULL,
+ form_name VARCHAR(190) DEFAULT NULL,
+ budget VARCHAR(80) DEFAULT NULL,
+ preferred_location VARCHAR(180) DEFAULT NULL,
+ property_type VARCHAR(80) DEFAULT NULL,
+ purpose VARCHAR(80) DEFAULT NULL,
+ status VARCHAR(50) NOT NULL DEFAULT 'New',
+ next_followup_at DATETIME DEFAULT NULL,
+ last_contact_at DATETIME DEFAULT NULL,
+ lost_reason VARCHAR(190) DEFAULT NULL,
+ remarks TEXT DEFAULT NULL,
+ external_lead_id VARCHAR(190) DEFAULT NULL,
+ created_by INT UNSIGNED DEFAULT NULL,
+ created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+ updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+ INDEX idx_phone(phone), INDEX idx_status(status), INDEX idx_followup(next_followup_at), INDEX idx_project(project_id), INDEX idx_assigned(assigned_to),
+ UNIQUE KEY uq_external_lead(source, external_lead_id),
+ CONSTRAINT fk_lead_project FOREIGN KEY(project_id) REFERENCES projects(id) ON DELETE SET NULL,
+ CONSTRAINT fk_lead_assignee FOREIGN KEY(assigned_to) REFERENCES users(id) ON DELETE SET NULL,
+ CONSTRAINT fk_lead_creator FOREIGN KEY(created_by) REFERENCES users(id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE activities (
+ id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+ lead_id BIGINT UNSIGNED NOT NULL,
+ user_id INT UNSIGNED DEFAULT NULL,
+ type VARCHAR(50) NOT NULL,
+ note TEXT DEFAULT NULL,
+ created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+ INDEX idx_activity_lead(lead_id),
+ CONSTRAINT fk_activity_lead FOREIGN KEY(lead_id) REFERENCES leads(id) ON DELETE CASCADE,
+ CONSTRAINT fk_activity_user FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE audit_logs (
+ id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+ user_id INT UNSIGNED DEFAULT NULL,
+ entity VARCHAR(50) NOT NULL,
+ entity_id BIGINT UNSIGNED NOT NULL,
+ action VARCHAR(80) NOT NULL,
+ details TEXT DEFAULT NULL,
+ created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+ INDEX idx_audit_entity(entity,entity_id),
+ CONSTRAINT fk_audit_user FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
